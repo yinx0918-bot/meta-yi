@@ -131,8 +131,34 @@ document.addEventListener("DOMContentLoaded", () => {
   function setIntent(i){ savePrefs({ intent: i }); }
 
   function intentLabel(i){
-    if (i === INTENTS.LEARN) return "问答学习";
-    if (i === INTENTS.COMFORT) return "求安慰";
+ async function runEngine({ intent, text }) {
+  await sleep(450);
+
+  console.log("[AI] sending /api/chat", text);
+
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, intent })
+  });
+
+  console.log("[AI] status:", res.status);
+
+  const raw = await res.text();
+  console.log("[AI] raw response:", raw);
+
+  let data = null;
+  try { data = JSON.parse(raw); } catch {}
+
+  if (!res.ok) {
+    return `【系统错误】AI 接口异常（${res.status}）\n\n${raw.slice(0, 300)}`;
+  }
+
+  return (data && (data.reply || data.text || data.message || data.content)) 
+    || raw 
+    || "【系统】AI 无返回";
+}
+
     return "推演占卜";
   }
 
@@ -455,4 +481,5 @@ document.addEventListener("DOMContentLoaded", () => {
   renderDialogue();
   applyModeUI();
 });
+
 
