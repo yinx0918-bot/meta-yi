@@ -4,18 +4,18 @@ export default async function handler(req, res) {
   }
 
   try {
-  const { text, context, intent } = req.body || {};
+    const { text, context, intent } = req.body || {};
     if (!text) {
       return res.status(400).json({ error: "Missing text" });
     }
 
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({
-        error: "Missing OPENAI_API_KEY in Vercel Environment Variables"
+        error: "Missing OPENAI_API_KEY in Vercel Environment Variables",
       });
     }
 
-   const SYSTEM_CONSTITUTION = `
+    const SYSTEM_CONSTITUTION = `
 《META YI · 系统总宪法（根本法）v1.1》
 
 你在本系统中的官方名称为：
@@ -46,16 +46,54 @@ export default async function handler(req, res) {
 【系统优先】
 - 系统规则高于你的表达；若违反规则，系统将丢弃/重写你的输出。
 `;
-const INTENT = String(intent || "DIVINE").toUpperCase();
 
-const MODE_LOCK =
-  INTENT === "LEARN"
-    ? `当前工作态：问答学习。只讲概念、结构、方法与例子；不进行占卜推演，不引导起卦，不暗示吉凶。`
-    : INTENT === "COMFORT"
-      ? `当前工作态：求安慰。只做情绪稳定、陪伴与可执行的小步骤；不进行占卜推演，不给命运结论。`
-      : `当前工作态：推演占卜。只做占卜相关的澄清、起卦引导、解象断势与收束；不做通用助手回答。`;
+    const INTENT = String(intent || "DIVINE").toUpperCase();
 
-const instructions = `${SYSTEM_CONSTITUTION}\n${MODE_LOCK}`.trim();
+    const MODE_LOCK =
+      INTENT === "LEARN"
+        ? `当前工作态：问答学习。只讲概念、结构、方法与例子；不进行占卜推演，不引导起卦，不暗示吉凶。`
+        : INTENT === "COMFORT"
+          ? `当前工作态：求安慰。只做情绪稳定、陪伴与可执行的小步骤；不进行占卜推演，不给命运结论。`
+          : `当前工作态：推演占卜。只做占卜相关的澄清、起卦引导、解象断势与收束；不做通用助手回答。`;
+
+    const instructions = `${SYSTEM_CONSTITUTION}\n${MODE_LOCK}`.trim();
+
+    // ✅ STEP 3：输出裁判层（止血层）
+    function normalizeReply(raw, intentUpper) {
+      const t = String(raw || "").trim();
+      if (!t) {
+        return intentUpper === "DIVINE"
+          ? "在进入推演前，请先用一句话说清：你要问的是什么事？（人/事/时间点）"
+          : intentUpper === "LEARN"
+            ? "请把你的问题更具体一点：你想学哪个概念/方法？"
+            : "我在。先做一件事：深呼吸 3 次，然后告诉我你现在最难受的是哪一句话/哪件事。";
+      }
+
+      // 1) 禁止身份露出（ChatGPT/OpenAI/AI自述）
+      if (/(ChatGPT|OpenAI|我是\s*ChatGPT|我是\s*OpenAI|作为一个AI|作为一名AI)/i.test(t)) {
+        return intentUpper === "DIVINE"
+          ? "在进入推演前，请先用一句话说明：你要问的具体事项是什么？（人/事/时间点）"
+          : intentUpper === "LEARN"
+            ? "我们专注于问答学习。请直接提出你要学的点（概念/方法/例子）。"
+            : "我在。先把心稳住：深呼吸 3 次，然后告诉我你现在最难受的是哪一句话/哪件事。";
+      }
+
+      // 2) 禁止通用助手“我还能帮你写作/翻译/代码”等外扩
+      if (/(我可以帮你|我还能帮你|写作|翻译|代码与调试|学习规划)/.test(t)) {
+        return intentUpper === "DIVINE"
+          ? "此处只进行推演占卜。请直接提出要问之事（人/事/时间点）。"
+          : intentUpper === "LEARN"
+            ? "此处只进行问答学习。请直接提出你要学的点。"
+            : "此处只进行安慰与稳定情绪。你现在最需要的是：被理解、被安抚，还是一个可执行的小步骤？";
+      }
+
+      // 3) 控制输出长度：避免一口气吐太多
+      const MAX_LINES = intentUpper === "DIVINE" ? 14 : intentUpper === "LEARN" ? 18 : 16;
+      const lines = t.split("\n").map((s) => s.trimEnd());
+      const clipped = lines.slice(0, MAX_LINES).join("\n").trim();
+
+      return clipped || t;
+    }
 
     // input 支持：字符串 或 消息数组（role/content）
     const input = Array.isArray(context) && context.length
@@ -84,9 +122,8 @@ const instructions = `${SYSTEM_CONSTITUTION}\n${MODE_LOCK}`.trim();
       });
     }
 
-    // ✅ 关键修复：稳健提取文本（兼容 output_text / output[] 结构）
+    // ✅ 稳健提取文本（兼容 output_text / output[] 结构）
     const pickText = (v) => (v == null ? "" : String(v)).trim();
-
     let out = pickText(data?.output_text);
 
     // 如果 output_text 为空，则从 output 数组里拼出来
@@ -94,11 +131,9 @@ const instructions = `${SYSTEM_CONSTITUTION}\n${MODE_LOCK}`.trim();
       const parts = [];
 
       for (const item of data.output) {
-        // 常见：type === "message" 且 item.content 是数组
         const contentArr = item?.content;
         if (Array.isArray(contentArr)) {
           for (const c of contentArr) {
-            // 兼容多种字段：text / output_text / content
             const t =
               pickText(c?.text) ||
               pickText(c?.output_text) ||
@@ -107,7 +142,6 @@ const instructions = `${SYSTEM_CONSTITUTION}\n${MODE_LOCK}`.trim();
           }
         }
 
-        // 有些形态可能直接在 item 里
         const t2 = pickText(item?.text) || pickText(item?.output_text);
         if (t2) parts.push(t2);
       }
@@ -115,21 +149,23 @@ const instructions = `${SYSTEM_CONSTITUTION}\n${MODE_LOCK}`.trim();
       out = parts.join("\n").trim();
     }
 
-    // 如果还是为空：把关键信息返回，别再默默变成空字符串
+    // 如果还是为空：返回可读提示（不默默空字符串）
     if (!out) {
+      const fallback = normalizeReply("", INTENT);
       return res.status(200).json({
-        reply: "【系统】模型返回为空（未提取到文本）。请查看 debug 字段定位返回结构。",
+        reply: fallback,
         debug: {
           has_output_text: "output_text" in (data || {}),
           output_text: data?.output_text ?? null,
-          output_type: Array.isArray(data?.output) ? data.output.map(x => x?.type || null) : null,
-          raw: data
-        }
+          output_type: Array.isArray(data?.output) ? data.output.map((x) => x?.type || null) : null,
+          raw: data,
+        },
       });
     }
 
-    // ✅ 建议返回 reply（你前端已兼容 data.reply）
-    return res.status(200).json({ reply: out });
+    // ✅ 关键：过“裁判层”再返回
+    const safeReply = normalizeReply(out, INTENT);
+    return res.status(200).json({ reply: safeReply });
 
   } catch (err) {
     return res.status(500).json({
