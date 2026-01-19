@@ -1,5 +1,4 @@
-alert("META YI JS LOADED");
-
+console.log("META YI JS LOADED");
 // =======================================================
 // META YI · Stable Chat Core (Hidden Divine Paths)
 // - Sub models are NOT exposed to UI
@@ -483,3 +482,4 @@ if (!hasNamedDiviner() || isAwaitingName()) {
   renderDialogue();
   applyModeUI();
 });
+
