@@ -127,8 +127,20 @@ document.addEventListener("DOMContentLoaded", () => {
     COMFORT: "COMFORT"
   };
 
-  function getIntent(){ return getPrefs().intent || INTENTS.DIVINE; }
-  function setIntent(i){ savePrefs({ intent: i }); }
+ function normalizeIntent(v){
+  const s = String(v || "").trim().toUpperCase();
+  return (s === INTENTS.LEARN || s === INTENTS.COMFORT || s === INTENTS.DIVINE)
+    ? s
+    : INTENTS.DIVINE;
+}
+
+function getIntent(){
+  return normalizeIntent(getPrefs().intent || INTENTS.DIVINE);
+}
+
+function setIntent(i){
+  savePrefs({ intent: normalizeIntent(i) });
+}
 
   function intentLabel(i){
  async function runEngine({ intent, text }) {
@@ -481,5 +493,6 @@ document.addEventListener("DOMContentLoaded", () => {
   renderDialogue();
   applyModeUI();
 });
+
 
 
