@@ -317,11 +317,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // =========================
     console.log("[AI] sending /api/chat", text);
 
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text })
-    });
+   const res = await fetch("/api/chat", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ text })
+});
+
 
     console.log("[AI] status:", res.status);
 
@@ -447,7 +448,4 @@ document.addEventListener("DOMContentLoaded", () => {
   renderDialogue();
   applyModeUI();
 });
-
-
-
 
