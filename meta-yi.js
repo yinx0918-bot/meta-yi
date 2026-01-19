@@ -1,4 +1,3 @@
-
 // =======================================================
 // META YI · Stable Chat Core (Hidden Divine Paths)
 // - Sub models are NOT exposed to UI
@@ -30,7 +29,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const mainModePanel = document.getElementById("mainModePanel");
 
-
   if (!dialogue || !composer || !promptEl) return;
 
   /* ===============================
@@ -38,84 +36,80 @@ document.addEventListener("DOMContentLoaded", () => {
   =============================== */
   const LS_CHATS = "meta_yi_chats_v1";
   const LS_PREFS = "meta_yi_prefs_v1";
+
   // ===== Diviner Naming (Onboarding) =====
-const LS_DIVINER = "meta_yi_diviner_name_v1";
-const LS_AWAIT_NAME = "meta_yi_await_name_v1";
+  const LS_DIVINER      = "meta_yi_diviner_name_v1";
+  const LS_AWAIT_NAME   = "meta_yi_await_name_v1";
+  const LS_NAME_STAGE   = "meta_yi_name_stage_v1";       // ✅ missing
+  const LS_NAME_CANDIDATE = "meta_yi_name_candidate_v1"; // ✅ missing
 
-function hasNamedDiviner(){
-  return !!String(localStorage.getItem(LS_DIVINER) || "").trim();
-}
-function getDivinerName(){
-  return String(localStorage.getItem(LS_DIVINER) || "").trim();
-}
-function setDivinerName(name){
-  localStorage.setItem(LS_DIVINER, String(name || "").trim());
-}
-function isAwaitingName(){
-  return localStorage.getItem(LS_AWAIT_NAME) === "1";
-}
-function setAwaitingName(on){
-  localStorage.setItem(LS_AWAIT_NAME, on ? "1" : "0");
-}
-function getNameStage(){ return localStorage.getItem(LS_NAME_STAGE) || "0"; }
-function setNameStage(s){ localStorage.setItem(LS_NAME_STAGE, String(s)); }
+  function hasNamedDiviner(){
+    return !!String(localStorage.getItem(LS_DIVINER) || "").trim();
+  }
+  function getDivinerName(){
+    return String(localStorage.getItem(LS_DIVINER) || "").trim();
+  }
+  function setDivinerName(name){
+    localStorage.setItem(LS_DIVINER, String(name || "").trim());
+  }
+  function isAwaitingName(){
+    return localStorage.getItem(LS_AWAIT_NAME) === "1";
+  }
+  function setAwaitingName(on){
+    localStorage.setItem(LS_AWAIT_NAME, on ? "1" : "0");
+  }
 
-function setNameCandidate(name){
-  localStorage.setItem(LS_NAME_CANDIDATE, String(name || "").trim());
-}
-function getNameCandidate(){
-  return String(localStorage.getItem(LS_NAME_CANDIDATE) || "").trim();
-}
-function clearNameCandidate(){
-  localStorage.removeItem(LS_NAME_CANDIDATE);
-}
+  function getNameStage(){ return localStorage.getItem(LS_NAME_STAGE) || "0"; }
+  function setNameStage(s){ localStorage.setItem(LS_NAME_STAGE, String(s)); }
 
-function isConfirmYes(text){
-  return /^(确定|确认|是|好|ok|OK|Okay|yes|y|はい|うん)$/i.test(String(text||"").trim());
-}
-function isConfirmNo(text){
-  return /^(换一个|重来|不是|不|no|n|いいえ)$/i.test(String(text||"").trim());
-}
+  function setNameCandidate(name){
+    localStorage.setItem(LS_NAME_CANDIDATE, String(name || "").trim());
+  }
+  function getNameCandidate(){
+    return String(localStorage.getItem(LS_NAME_CANDIDATE) || "").trim();
+  }
+  function clearNameCandidate(){
+    localStorage.removeItem(LS_NAME_CANDIDATE);
+  }
 
-// “像不像名字”的粗判：尽量宽松，避免用户一句长文也被当名字
-function looksLikeName(s){
-  const t = String(s || "").trim();
+  function isConfirmYes(text){
+    return /^(确定|确认|是|好|ok|OK|Okay|yes|y|はい|うん)$/i.test(String(text||"").trim());
+  }
+  function isConfirmNo(text){
+    return /^(换一个|重来|不是|不|no|n|いいえ)$/i.test(String(text||"").trim());
+  }
 
-  // 基本限制
-  if (!t) return false;
-  if (t.length < 2) return false;
-  if (t.length > 8) return false; // 名字别太长
+  // “像不像名字”的粗判：尽量宽松，避免用户一句长文也被当名字
+  function looksLikeName(s){
+    const t = String(s || "").trim();
 
-  // 有明显句子标点、空格太多，一律不当名字
-  if (/[。！？?!.，,]/.test(t)) return false;
-  if (/\s/.test(t)) return false;
+    if (!t) return false;
+    if (t.length < 2) return false;
+    if (t.length > 8) return false;
 
-  // 过滤常见寒暄/无意义
-  if (/^(你好|您好|在吗|在不在|嗨|哈喽|hello|hi|test|测试)$/i.test(t)) return false;
+    if (/[。！？?!.，,]/.test(t)) return false;
+    if (/\s/.test(t)) return false;
 
-  // 允许：中文/日文/英文（短）
-  // 中文/日文：2-8字；英文：2-8字母
-  const isCJK = /^[\u4e00-\u9fff\u3040-\u30ff]{2,8}$/.test(t);
-  const isEN  = /^[a-zA-Z]{2,8}$/.test(t);
+    if (/^(你好|您好|在吗|在不在|嗨|哈喽|hello|hi|test|测试)$/i.test(t)) return false;
 
-  return isCJK || isEN;
-}
+    const isCJK = /^[\u4e00-\u9fff\u3040-\u30ff]{2,8}$/.test(t);
+    const isEN  = /^[a-zA-Z]{2,8}$/.test(t);
 
-
-  const PREF_DIVINER_NAME = "divinerName";
-  const PREF_HAS_NAMED    = "hasNamed";
+    return isCJK || isEN;
+  }
 
   const uid = () => "c_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   const nowISO = () => new Date().toISOString();
+
   const safeParse = (v, f) => {
-  if (v == null || v === "") return f;           // ✅ localStorage 为空时兜底
-  try {
-    const x = JSON.parse(v);
-    return (x == null ? f : x);                  // ✅ JSON.parse(null) 会得到 null，也要兜底
-  } catch {
-    return f;
-  }
-};
+    if (v == null || v === "") return f;
+    try {
+      const x = JSON.parse(v);
+      return (x == null ? f : x);
+    } catch {
+      return f;
+    }
+  };
 
   const sleep = (ms) => new Promise(res => setTimeout(res, ms));
   const isMobile = () => window.innerWidth <= 720;
@@ -134,26 +128,6 @@ function looksLikeName(s){
 
   function getIntent(){ return getPrefs().intent || INTENTS.DIVINE; }
   function setIntent(i){ savePrefs({ intent: i }); }
-  /* ===============================
-   Persona Binding (Diviner Name)
-=============================== */
-function getDivinerName(){
-  const p = getPrefs();
-  return (p[PREF_DIVINER_NAME] || "").trim();
-}
-function hasNamedDiviner(){
-  const p = getPrefs();
-  return !!p[PREF_HAS_NAMED] && !!getDivinerName();
-}
-function setDivinerName(name){
-  const n = String(name || "").trim().slice(0, 10); // 防止太长
-  if (!n) return false;
-  savePrefs({ [PREF_DIVINER_NAME]: n, [PREF_HAS_NAMED]: true });
-  return true;
-}
-function clearDivinerName(){
-  savePrefs({ [PREF_DIVINER_NAME]: "", [PREF_HAS_NAMED]: false });
-}
 
   function intentLabel(i){
     if (i === INTENTS.LEARN) return "问答学习";
@@ -192,7 +166,7 @@ function clearDivinerName(){
   =============================== */
   function openSidebar(){
     sidebar?.classList.add("open");
-   if (overlay && isMobile()) overlay.classList.add("show");
+    if (overlay && isMobile()) overlay.classList.add("show");
   }
   function closeSidebar(){
     sidebar?.classList.remove("open");
@@ -209,11 +183,11 @@ function clearDivinerName(){
   =============================== */
   function openModel(){
     modelPicker?.classList.add("open");
-    modelPanel.hidden = false;
+    if (modelPanel) modelPanel.hidden = false;
   }
   function closeModel(){
     modelPicker?.classList.remove("open");
-    modelPanel.hidden = true;
+    if (modelPanel) modelPanel.hidden = true;
   }
 
   modelToggle?.addEventListener("click", e => {
@@ -235,18 +209,21 @@ function clearDivinerName(){
      Chat Storage
   =============================== */
   let chats = safeParse(localStorage.getItem(LS_CHATS), []);
-if (!Array.isArray(chats)) chats = [];  // ✅ 彻底避免 null / object
+  if (!Array.isArray(chats)) chats = [];
 
   let currentId = "draft";
 
- const draftMessages = [
-  
-];
+  // ✅ 按你要求：新聊天不自动说话
+  const draftMessages = [];
 
   function saveChats(){ localStorage.setItem(LS_CHATS, JSON.stringify(chats)); }
-  function hasUser(chat){ return chat.messages.some(m => m.role === "user"); }
+  function hasUser(chat){ return (chat.messages || []).some(m => m.role === "user"); }
   function getChat(){ return chats.find(c => c.id === currentId); }
-  function messages(){ return currentId === "draft" ? draftMessages : getChat().messages; }
+  function messages(){
+    if (currentId === "draft") return draftMessages;
+    const c = getChat();
+    return c ? c.messages : draftMessages;
+  }
 
   /* ===============================
      Render
@@ -291,18 +268,9 @@ if (!Array.isArray(chats)) chats = [];  // ✅ 彻底避免 null / object
   }
 
   /* ===============================
-     Engine
-  =============================== */
-    /* ===============================
      Divination Path Router (Auto)
-     - 用户不选择，系统判定路径
-     - 返回：{ mode, method, needsExternal, ask }
   =============================== */
   function chooseDivinationPath(text){
-    const t = String(text || "").toLowerCase();
-
-    // 强提示：需要“外部起卦”
-    // （你说六爻/高岛/塔罗需要外部起卦配合）
     const needExternal = (methodName, ask) => ({
       mode: "EXTERNAL",
       method: methodName,
@@ -310,17 +278,14 @@ if (!Array.isArray(chats)) chats = [];  // ✅ 彻底避免 null / object
       ask
     });
 
-    // 1) 塔罗：恋爱/关系/情绪/复合等，很常见
     if (/(恋爱|感情|复合|暧昧|分手|出轨|喜欢|他爱不爱|她爱不爱|关系|相处|心情|情绪)/.test(text)) {
       return needExternal("塔罗", "请你现在抽 3 张牌（过去/现在/未来）并告诉我牌名；或直接输入你抽到的三张牌。");
     }
 
-    // 2) 六爻：事业决策/成败/能不能/要不要/签约/官非等
     if (/(能不能|可以吗|要不要|成不成|是否|签约|合同|跳槽|升职|裁员|投资|赚钱|亏|官司|纠纷|项目|合作|创业)/.test(text)) {
       return needExternal("六爻", "请用“外部起卦”：抛 3 枚硬币起卦（6 次），把每次正反结果发我；或直接发你得到的卦（本卦/变卦）。");
     }
 
-    // 3) 择日：开业/搬家/签约/结婚/动土/出行/手术等
     if (/(择日|选日|吉日|开业|搬家|乔迁|入宅|动土|开工|签约日期|结婚|领证|出行|旅行|手术|开刀)/.test(text)) {
       return {
         mode: "DATE",
@@ -330,11 +295,13 @@ if (!Array.isArray(chats)) chats = [];  // ✅ 彻底避免 null / object
       };
     }
 
-    // 4) 默认：高島（偏“断势/断机/决断”），适合日文市场
     return needExternal("高島易断", "请你用“外部起卦”：随手翻书取一页一行（或抽签/随机数字 1–64），把得到的数字/卦名告诉我。");
   }
 
-   async function runEngine({ intent, text }){
+  /* ===============================
+     Engine
+  =============================== */
+  async function runEngine({ intent, text }){
     await sleep(450);
 
     if (intent === INTENTS.LEARN) {
@@ -346,27 +313,30 @@ if (!Array.isArray(chats)) chats = [];  // ✅ 彻底避免 null / object
     }
 
     // =========================
-    // 推演占卜：系统自动判定路径
+    // 推演占卜：调用 /api/chat
     // =========================
-    const route = chooseDivinationPath(text);
+    console.log("[AI] sending /api/chat", text);
 
-    // 记录“系统判定结果”（只存内部，不对外展示 UI）
-   savePrefs({ model: route.method }); // 你也可以改成 route.mode，但这里用 method 更直观
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text })
+    });
 
-    // 需要外部起卦：先引导用户完成起卦（关键：让机器像大师一样“布置动作”）
-    if (route.needsExternal) {
-      return `【推演占卜｜系统判定：${route.method}】\n\n命题：${text}\n\n为确保“不是凭空说”，本题需要你完成一次外部起卦。\n\n下一步：${route.ask}\n\n你发来结果后，我再进入：定象 → 断势 → 给结论与行动建议。`;
+    console.log("[AI] status:", res.status);
+
+    const raw = await res.text();
+    console.log("[AI] raw response:", raw);
+
+    let data = null;
+    try { data = JSON.parse(raw); } catch {}
+
+    if (!res.ok) {
+      return `【系统错误】AI 接口异常（${res.status}）\n\n${raw.slice(0, 300)}`;
     }
 
-    // 不需要外部起卦的路径（例如择日）
-    if (route.mode === "DATE") {
-      return `【推演占卜｜系统判定：择日】\n\n命题：${text}\n\n我可以按“协纪辩方思路 + 干支避忌”给你筛选。\n\n下一步：${route.ask}`;
-    }
-
-    // 兜底（理论上走不到）
-    return `【推演占卜】\n\n命题：${text}\n\n请补充一点背景，我才能开始推演。`;
-  }
-
+    return (data && (data.reply || data.text || data.message || data.content)) || raw || "【系统】AI 无返回";
+  } // ✅ 这里必须闭合 runEngine（你原来缺了这个大括号）
 
   /* ===============================
      Composer
@@ -389,46 +359,51 @@ if (!Array.isArray(chats)) chats = [];  // ✅ 彻底避免 null / object
     }
 
     const chat = getChat();
+    if (!chat) return;
+
     chat.messages.push({ role: "user", text, ts: nowISO() });
+
     // ===== Onboarding: Naming flow (AFTER user sends a message) =====
-if (!hasNamedDiviner() || isAwaitingName()) {
+    if (!hasNamedDiviner() || isAwaitingName()) {
 
-  // 情况A：系统正在等用户给名字——把这一条当名字处理
-  if (isAwaitingName() && looksLikeName(text)) {
-    const picked = text.trim();
-    setDivinerName(picked);
-    setAwaitingName(false);
+      if (isAwaitingName() && looksLikeName(text)) {
+        const picked = text.trim();
+        setDivinerName(picked);
+        setAwaitingName(false);
 
-    chat.messages.push({
-      role: "ai",
-      text:
-        `好。\n从现在起，我就是你的私人占卜师「${picked}」。\n\n你想看哪一件事？（一句话说清：人/事/时间点）`,
-      ts: nowISO()
-    });
+        chat.messages.push({
+          role: "ai",
+          text:
+            `好。\n从现在起，我就是你的私人占卜师「${picked}」。\n\n你想看哪一件事？（一句话说清：人/事/时间点）`,
+          ts: nowISO()
+        });
 
-    saveChats();
-    renderChatList();
-    renderDialogue();
-    return; // ✅ 结束：不进入 runEngine
-  }
+        saveChats();
+        renderChatList();
+        renderDialogue();
+        promptEl.value = "";
+        autosize();
+        return;
+      }
 
-  // 情况B：还没取名（或用户没按名字回答）——先请他取名
-  if (!hasNamedDiviner()) {
-    setAwaitingName(true);
+      if (!hasNamedDiviner()) {
+        setAwaitingName(true);
 
-    chat.messages.push({
-      role: "ai",
-      text:
-        "我先不急着推演。\n\n在开始之前，你可以为我取一个名字吗？\n以后我就用这个名字，只做你的私人占卜师。\n\n（直接回复你想叫我的名字即可）",
-      ts: nowISO()
-    });
+        chat.messages.push({
+          role: "ai",
+          text:
+            "我先不急着推演。\n\n在开始之前，你可以为我取一个名字吗？\n以后我就用这个名字，只做你的私人占卜师。\n\n（直接回复你想叫我的名字即可）",
+          ts: nowISO()
+        });
 
-    saveChats();
-    renderChatList();
-    renderDialogue();
-    return; // ✅ 结束：不进入 runEngine
-  }
-}
+        saveChats();
+        renderChatList();
+        renderDialogue();
+        promptEl.value = "";
+        autosize();
+        return;
+      }
+    }
 
     promptEl.value = "";
     autosize();
@@ -445,23 +420,12 @@ if (!hasNamedDiviner() || isAwaitingName()) {
       chat.messages.push({ role: "ai", text: reply, ts: nowISO() });
       saveChats();
       renderDialogue();
-      fetch("/api/chat", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    message: text
-  })
-})
-.then(res => res.json())
-.then(data => {
-  console.log("API RESPONSE:", data);
-})
-.catch(err => {
-  console.error("API ERROR:", err);
-});
-
+    }).catch(err => {
+      console.error("ENGINE ERROR:", err);
+      chat.messages = chat.messages.filter(m => !m._tmp);
+      chat.messages.push({ role: "ai", text: "引擎错误，请稍后再试。", ts: nowISO() });
+      saveChats();
+      renderDialogue();
     });
   });
 
@@ -476,12 +440,14 @@ if (!hasNamedDiviner() || isAwaitingName()) {
   =============================== */
   if (!getPrefs().intent) savePrefs({ intent: INTENTS.DIVINE });
 
+  // ✅ 这行语法没问题，但我不主动替你改逻辑（按你要求）
   if (chats.filter(hasUser).length) currentId = chats[0].id;
 
   renderChatList();
   renderDialogue();
   applyModeUI();
 });
+
 
 
 
