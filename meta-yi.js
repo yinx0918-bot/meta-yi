@@ -1,3 +1,4 @@
+
 // =======================================================
 // META YI · Stable Chat Core (Hidden Divine Paths)
 // - Sub models are NOT exposed to UI
@@ -172,10 +173,14 @@ document.addEventListener("DOMContentLoaded", () => {
     sidebar?.classList.remove("open");
     overlay?.classList.remove("show");
   }
+
+  // ✅ FIX: sidebar 可能为 null 时，避免 sidebar.classList 报错
   sidebarDock?.addEventListener("click", e => {
     e.stopPropagation();
+    if (!sidebar) return;
     sidebar.classList.contains("open") ? closeSidebar() : openSidebar();
   });
+
   overlay?.addEventListener("click", closeSidebar);
 
   /* ===============================
@@ -190,10 +195,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (modelPanel) modelPanel.hidden = true;
   }
 
+  // ✅ FIX: modelPicker 可能为 null 时，避免 modelPicker.classList 报错
   modelToggle?.addEventListener("click", e => {
     e.stopPropagation();
+    if (!modelPicker) return;
     modelPicker.classList.contains("open") ? closeModel() : openModel();
   });
+
   modelPanel?.addEventListener("click", e => e.stopPropagation());
 
   mainModePanel?.querySelectorAll("button[data-mainmode]").forEach(btn => {
@@ -317,12 +325,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // =========================
     console.log("[AI] sending /api/chat", text);
 
-   const res = await fetch("/api/chat", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ text })
-});
-
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text })
+    });
 
     console.log("[AI] status:", res.status);
 
@@ -448,4 +455,3 @@ document.addEventListener("DOMContentLoaded", () => {
   renderDialogue();
   applyModeUI();
 });
-
