@@ -1,4 +1,3 @@
-
 // =======================================================
 // META YI · Stable Chat Core (Hidden Divine Paths)
 // - Sub models are NOT exposed to UI
@@ -127,50 +126,24 @@ document.addEventListener("DOMContentLoaded", () => {
     COMFORT: "COMFORT"
   };
 
- function normalizeIntent(v){
-  const s = String(v || "").trim().toUpperCase();
-  return (s === INTENTS.LEARN || s === INTENTS.COMFORT || s === INTENTS.DIVINE)
-    ? s
-    : INTENTS.DIVINE;
-}
-
-function getIntent(){
-  return normalizeIntent(getPrefs().intent || INTENTS.DIVINE);
-}
-
-function setIntent(i){
-  savePrefs({ intent: normalizeIntent(i) });
-}
-
-  function intentLabel(i){
- async function runEngine({ intent, text }) {
-  await sleep(450);
-
-  console.log("[AI] sending /api/chat", text);
-
-  const res = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, intent })
-  });
-
-  console.log("[AI] status:", res.status);
-
-  const raw = await res.text();
-  console.log("[AI] raw response:", raw);
-
-  let data = null;
-  try { data = JSON.parse(raw); } catch {}
-
-  if (!res.ok) {
-    return `【系统错误】AI 接口异常（${res.status}）\n\n${raw.slice(0, 300)}`;
+  function normalizeIntent(v){
+    const s = String(v || "").trim().toUpperCase();
+    return (s === INTENTS.LEARN || s === INTENTS.COMFORT || s === INTENTS.DIVINE)
+      ? s
+      : INTENTS.DIVINE;
   }
 
-  return (data && (data.reply || data.text || data.message || data.content)) 
-    || raw 
-    || "【系统】AI 无返回";
-}
+  function getIntent(){
+    return normalizeIntent(getPrefs().intent || INTENTS.DIVINE);
+  }
 
+  function setIntent(i){
+    savePrefs({ intent: normalizeIntent(i) });
+  }
+
+  function intentLabel(i){
+    if (i === INTENTS.LEARN) return "问答学习";
+    if (i === INTENTS.COMFORT) return "求安慰";
     return "推演占卜";
   }
 
@@ -197,7 +170,8 @@ function setIntent(i){
             : "调心 · 安定 · 建议";
     }
 
-    setActiveButton(mainModePanel, b => b.dataset.mainmode === intent);
+    // ✅ 小修：dataset 可能是 learn/comfort/divine（小写），这里统一 normalize 后对比
+    setActiveButton(mainModePanel, b => normalizeIntent(b.dataset.mainmode) === intent);
   }
 
   /* ===============================
@@ -350,23 +324,12 @@ function setIntent(i){
   async function runEngine({ intent, text }){
     await sleep(450);
 
-    if (intent === INTENTS.LEARN) {
-      return `【问答学习】\n\n问题：${text}\n\n我会按“概念 → 结构 → 方法 → 例子”回答。\n（后续接入 AI 后这里会变成真正的讲解）`;
-    }
-
-    if (intent === INTENTS.COMFORT) {
-      return `【求安慰】\n\n我听到了：${text}\n\n先把心稳住：你现在最难受的点是“哪一句话/哪件事”？\n我会给你一个可执行的小步骤，让你今晚先睡稳。`;
-    }
-
-    // =========================
-    // 推演占卜：调用 /api/chat
-    // =========================
-    console.log("[AI] sending /api/chat", text);
+    console.log("[AI] sending /api/chat", { text, intent });
 
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-     body: JSON.stringify({ text, intent: getIntent() })
+      body: JSON.stringify({ text, intent })
     });
 
     console.log("[AI] status:", res.status);
@@ -382,7 +345,7 @@ function setIntent(i){
     }
 
     return (data && (data.reply || data.text || data.message || data.content)) || raw || "【系统】AI 无返回";
-  } // ✅ 这里必须闭合 runEngine（你原来缺了这个大括号）
+  }
 
   /* ===============================
      Composer
@@ -493,6 +456,3 @@ function setIntent(i){
   renderDialogue();
   applyModeUI();
 });
-
-
-
