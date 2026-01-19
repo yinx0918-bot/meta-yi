@@ -328,7 +328,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text })
+     body: JSON.stringify({ text, intent: getIntent() })
     });
 
     console.log("[AI] status:", res.status);
@@ -455,3 +455,4 @@ document.addEventListener("DOMContentLoaded", () => {
   renderDialogue();
   applyModeUI();
 });
+
