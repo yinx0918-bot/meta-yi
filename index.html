@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>META YI</title>
+  <link rel="stylesheet" href="meta-yi.css?v=20260118-08" />
+</head>
+
+<body>
+
+  <!-- Overlay（仅移动端使用） -->
+  <div class="overlay" id="overlay" aria-hidden="true"></div>
+
+  <!-- ✅ 唯一 Sidebar 开关（意识边缘 Dock） -->
+  <button
+    class="sbDock"
+    id="sidebarDock"
+    type="button"
+    aria-label="打开或收起侧边栏"
+  >≡</button>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar" aria-label="侧边栏">
+    <div class="sidebar__inner">
+
+      <div class="sidebar__top">
+        <div class="sbBrand">
+          <div class="sbBrand__name">META YI</div>
+          <div class="sbBrand__sub">命运推演 · AI 大模型</div>
+        </div>
+      </div>
+
+      <div class="sidebar__actions">
+        <button class="sbBtn" id="newChat" type="button">＋ 新聊天</button>
+      </div>
+
+      <div class="sidebar__section">
+        <div class="sbTitle">记录</div>
+        <div class="sbList" id="chatList" role="list"></div>
+      </div>
+
+      <div class="sidebar__foot">
+        <a class="sbLink" href="../">← 返回 玄山</a>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- Topbar -->
+ <header class="topbar">
+  <div class="topbar__left"></div>
+
+  <div class="topbar__center">
+    <div class="modelPicker" id="modelPicker">
+  <button
+    class="modelMain"
+    id="modelToggle"
+    type="button"
+    aria-expanded="false"
+    aria-haspopup="menu"
+  >
+    <span class="brand">META YI</span>
+    <span class="ver">1.0</span>
+    <span class="mode" id="modelMode">推演占卜</span>
+    <span class="arrow">▾</span>
+  </button>
+
+  <div id="modelPanel" class="model-panel" hidden role="menu" aria-label="模式选择">
+    <div class="mpGroup" id="mainModePanel">
+      <button class="mpItem" type="button" data-mainmode="DIVINE">推演占卜</button>
+      <button class="mpItem" type="button" data-mainmode="LEARN">问答学习</button>
+      <button class="mpItem" type="button" data-mainmode="COMFORT">求安慰</button>
+    </div>
+
+        <div class="mpFoot" id="modelSub">推演占卜 · 由系统判定路径</div>
+
+  </div>
+</div>
+
+    </div>
+  </div>
+
+  <div class="topbar__right">
+    <button class="acctBtn" id="acctBtn" type="button">
+      <span class="acctAvatar" id="acctAvatar">玄</span>
+      <span class="acctMeta">
+        <span class="acctName" id="acctName">未登录</span>
+        <span class="acctSub" id="acctSub">点击登录 / 设置</span>
+      </span>
+    </button>
+  </div>
+</header>
+
+
+  <!-- 主体 -->
+  <main class="stage">
+    <section class="oracle" id="oracle">
+
+      <div
+        class="oracle__dialogue"
+        id="dialogue"
+        aria-live="polite"
+      ></div>
+
+      <div class="oracle__input">
+        <form class="composer" id="composer" autocomplete="off">
+
+          <textarea
+            class="composer__field"
+            id="prompt"
+            rows="1"
+            placeholder="在此输入你的命题……（Enter 发送 / Shift+Enter 换行）"
+          ></textarea>
+
+          <button class="composer__send" type="submit">↵</button>
+
+        </form>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- 会话浮动菜单 -->
+  <div id="sbFloatMenu" class="sbMenu" hidden>
+    <button class="sbMenu__item" data-act="rename">重命名</button>
+    <button class="sbMenu__item sbMenu__item--danger" data-act="delete">删除</button>
+  </div>
+
+  <script src="meta-yi.js?v=20260118-08"></script>
+</body>
+</html>
