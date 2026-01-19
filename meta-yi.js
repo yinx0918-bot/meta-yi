@@ -106,7 +106,16 @@ function looksLikeName(s){
 
   const uid = () => "c_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   const nowISO = () => new Date().toISOString();
-  const safeParse = (v, f) => { try { return JSON.parse(v); } catch { return f; } };
+  const safeParse = (v, f) => {
+  if (v == null || v === "") return f;           // ✅ localStorage 为空时兜底
+  try {
+    const x = JSON.parse(v);
+    return (x == null ? f : x);                  // ✅ JSON.parse(null) 会得到 null，也要兜底
+  } catch {
+    return f;
+  }
+};
+
   const sleep = (ms) => new Promise(res => setTimeout(res, ms));
   const isMobile = () => window.innerWidth <= 720;
 
@@ -225,6 +234,8 @@ function clearDivinerName(){
      Chat Storage
   =============================== */
   let chats = safeParse(localStorage.getItem(LS_CHATS), []);
+if (!Array.isArray(chats)) chats = [];  // ✅ 彻底避免 null / object
+
   let currentId = "draft";
 
  const draftMessages = [
@@ -453,3 +464,4 @@ if (!hasNamedDiviner() || isAwaitingName()) {
   renderDialogue();
   applyModeUI();
 });
+
