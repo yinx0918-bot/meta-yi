@@ -444,6 +444,23 @@ if (!hasNamedDiviner() || isAwaitingName()) {
       chat.messages.push({ role: "ai", text: reply, ts: nowISO() });
       saveChats();
       renderDialogue();
+      fetch("/api/chat", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    message: text
+  })
+})
+.then(res => res.json())
+.then(data => {
+  console.log("API RESPONSE:", data);
+})
+.catch(err => {
+  console.error("API ERROR:", err);
+});
+
     });
   });
 
@@ -464,4 +481,5 @@ if (!hasNamedDiviner() || isAwaitingName()) {
   renderDialogue();
   applyModeUI();
 });
+
 
