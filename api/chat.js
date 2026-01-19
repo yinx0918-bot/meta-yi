@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { text, context } = req.body || {};
+  const { text, context, intent } = req.body || {};
     if (!text) {
       return res.status(400).json({ error: "Missing text" });
     }
@@ -46,7 +46,17 @@ export default async function handler(req, res) {
 【系统优先】
 - 系统规则高于你的表达；若违反规则，系统将丢弃/重写你的输出。
 `;
-const instructions = SYSTEM_CONSTITUTION;
+const INTENT = String(intent || "DIVINE").toUpperCase();
+
+const MODE_LOCK =
+  INTENT === "LEARN"
+    ? `当前工作态：问答学习。只讲概念、结构、方法与例子；不进行占卜推演，不引导起卦，不暗示吉凶。`
+    : INTENT === "COMFORT"
+      ? `当前工作态：求安慰。只做情绪稳定、陪伴与可执行的小步骤；不进行占卜推演，不给命运结论。`
+      : `当前工作态：推演占卜。只做占卜相关的澄清、起卦引导、解象断势与收束；不做通用助手回答。`;
+
+const instructions = `${SYSTEM_CONSTITUTION}\n${MODE_LOCK}`.trim();
+
     // input 支持：字符串 或 消息数组（role/content）
     const input = Array.isArray(context) && context.length
       ? context
