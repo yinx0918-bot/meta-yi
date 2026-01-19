@@ -46,7 +46,7 @@ export default async function handler(req, res) {
 【系统优先】
 - 系统规则高于你的表达；若违反规则，系统将丢弃/重写你的输出。
 `;
-
+const instructions = SYSTEM_CONSTITUTION;
     // input 支持：字符串 或 消息数组（role/content）
     const input = Array.isArray(context) && context.length
       ? context
