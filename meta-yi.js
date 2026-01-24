@@ -29,6 +29,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const mainModePanel = document.getElementById("mainModePanel");
 
+  // Language
+  const langPicker = document.getElementById("langPicker");
+
   if (!dialogue || !composer || !promptEl) return;
 
   /* ===============================
@@ -36,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
   =============================== */
   const LS_CHATS = "meta_yi_chats_v1";
   const LS_PREFS = "meta_yi_prefs_v1";
+  const LS_LANG  = "meta_yi_lang_v1";
 
   // ===== Diviner Naming (Onboarding) =====
   const LS_DIVINER      = "meta_yi_diviner_name_v1";
@@ -116,6 +120,59 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function getPrefs(){ return safeParse(localStorage.getItem(LS_PREFS), {}) || {}; }
   function savePrefs(p){ localStorage.setItem(LS_PREFS, JSON.stringify({ ...getPrefs(), ...p })); }
+
+  /* ===============================
+     Language
+  =============================== */
+  const LANGS = ["AUTO","zh","ja","en","ko","fr","de","ru"];
+
+  function normalizeLang(v){
+    const s = String(v || "AUTO").trim();
+    return LANGS.includes(s) ? s : "AUTO";
+  }
+
+  function getLang(){
+    return normalizeLang(localStorage.getItem(LS_LANG) || (getPrefs().lang || "AUTO"));
+  }
+
+  function setLang(v){
+    const lang = normalizeLang(v);
+    localStorage.setItem(LS_LANG, lang);
+    savePrefs({ lang });
+  }
+
+  // very lightweight detection for AUTO
+  function detectLangFromText(text){
+    const t = String(text || "");
+    if (/[\uac00-\ud7af]/.test(t)) return "ko";
+    if (/[\u3040-\u30ff]/.test(t)) return "ja";
+    if (/[\u4e00-\u9fff]/.test(t)) return "zh";
+    // Cyrillic
+    if (/[\u0400-\u04FF]/.test(t)) return "ru";
+    // Basic Latin: default English
+    return "en";
+  }
+
+  function resolveLang(userText){
+    const chosen = getLang();
+    return chosen === "AUTO" ? detectLangFromText(userText) : chosen;
+  }
+
+  function getLang(){
+    const v = String(localStorage.getItem(LS_LANG) || "AUTO").trim();
+    return v || "AUTO";
+  }
+  function setLang(v){ localStorage.setItem(LS_LANG, String(v || "AUTO")); }
+
+  function detectLangFromText(text){
+    const t = String(text||"");
+    if (/[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]/.test(t)) return "ko";
+    if (/[\u3040-\u30ff]/.test(t)) return "ja";
+    if (/[\u4e00-\u9fff]/.test(t)) return "zh";
+    if (/[а-яА-ЯЁё]/.test(t)) return "ru";
+    if (/[a-zA-Z]/.test(t)) return "en";
+    return "en";
+  }
 
   /* ===============================
      Intent
@@ -225,6 +282,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // Language picker init
+  if (langPicker) {
+    langPicker.value = getLang();
+    langPicker.addEventListener("change", () => setLang(langPicker.value));
+  }
+
   /* ===============================
      Chat Storage
   =============================== */
@@ -321,15 +384,26 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ===============================
      Engine
   =============================== */
-  async function runEngine({ intent, text }){
+  async function runEngine({ intent, text, chatId }){
     await sleep(450);
 
-    console.log("[AI] sending /api/chat", { text, intent });
+    // AUTO language resolves per-message (but preference stays AUTO)
+    const prefLang = getLang();
+    const lang = prefLang === "AUTO" ? detectLangFromText(text) : prefLang;
+
+    console.log("[AI] sending /api/chat", { text, intent, lang, chatId });
 
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, intent })
+      body: JSON.stringify({
+        text,
+        intent,
+        lang,
+        prefLang,
+        chatId,
+        client: { name: "meta-yi", ver: "20260124" }
+      })
     });
 
     console.log("[AI] status:", res.status);
@@ -424,7 +498,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chat.messages.push(tmp);
     renderDialogue();
 
-    runEngine({ intent: getIntent(), text }).then(reply => {
+    runEngine({ intent: getIntent(), text, chatId: currentId }).then(reply => {
       chat.messages = chat.messages.filter(m => !m._tmp);
       chat.messages.push({ role: "ai", text: reply, ts: nowISO() });
       saveChats();
