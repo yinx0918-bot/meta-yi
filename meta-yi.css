@@ -266,7 +266,24 @@ body::before{
   z-index: -1;
 }
 .topbar__left{ display:flex; align-items:center; gap:10px; }
-.topbar__right{ display:flex; justify-content:flex-end; }
+.topbar__right{ display:flex; justify-content:flex-end; align-items:center; gap:10px; }
+
+/* Language Picker */
+.langWrap{ display:flex; align-items:center; }
+.langPicker{
+  height:36px;
+  padding:0 10px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.06);
+  color:rgba(255,255,255,.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 10px 22px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.langPicker:focus{ outline:none; }
+.langPicker:focus-visible{ outline:none; box-shadow: var(--focus); border-color: var(--focus-border); }
+.langPicker option{ background:#070b12; color: rgba(255,255,255,.92); }
 
 /* =========================
    Model Picker
